@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: blogzy-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: blogzy
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: other-app  # Specify other apps that can access
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: some-other-app  # Specify other apps to which traffic can be sent
