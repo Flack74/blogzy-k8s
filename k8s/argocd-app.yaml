@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blogzy
+  namespace: argocd
+spec:
+  destination:
+    namespace: blogzy-namespace
+    server: https://kubernetes.default.svc
+  source:
+    path: k8s
+    repoURL: 'https://github.com/your-username/your-repo.git'
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
