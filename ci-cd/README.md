@@ -91,5 +91,3 @@ Refer to [troubleshooting.md](k8s/troubleshooting.md) for common issues and thei
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
