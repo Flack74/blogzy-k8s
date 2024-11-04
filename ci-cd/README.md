@@ -84,4 +84,4 @@ The CI/CD pipeline is configured to automate the building and deployment of the 
 3. Ensure that Jenkins has access to your Docker Hub account to push images.
 
 ## License
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details. 📄
+This project is licensed under the Apache License 2.0. See the [LICENSE](..LICENSE) file for details. 📄
