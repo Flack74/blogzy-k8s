@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blogzy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blogzy
+  template:
+    metadata:
+      labels:
+        app: blogzy
+    spec:
+      containers:
+      - name: blogzy-container
+        image: blogzy-app
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blogzy-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5003
+      targetPort: 5003
+  selector:
+    app: blogzy
