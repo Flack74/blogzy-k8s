@@ -1,4 +1,4 @@
-# Blogzy
+# Blogzy-k8s
 
 ## Overview
 Blogzy is a Flask-based web application that allows users to create, read, update, and delete blog posts. The application is containerized using Docker and deployed on Kubernetes, with a CI/CD pipeline set up using Jenkins for automated builds and deployments. 📦
