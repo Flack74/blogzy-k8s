@@ -20,12 +20,20 @@ const EditPost = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
+        // Check if user is authenticated
+        if (!user) {
+          setError('You must be logged in to edit a post');
+          setLoading(false);
+          return;
+        }
+        
         const response = await api.get(`/api/v1/posts/${id}`);
         const postData = response.data;
         
         // Check if the current user is the author
         if (postData.author.id !== user.id) {
           setError('You do not have permission to edit this post');
+          setLoading(false);
           return;
         }
         
@@ -41,7 +49,7 @@ const EditPost = () => {
     };
 
     fetchPost();
-  }, [id, user.id]);
+  }, [id, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
