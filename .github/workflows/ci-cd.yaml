@@ -1,0 +1,158 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to AWS'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  DOCKER_REGISTRY: docker.io/${{ secrets.DOCKER_USERNAME }}
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+          
+      - name: Run tests
+        run: |
+          cd backend
+          pytest --cov=app tests/
+          
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: Run tests
+        run: |
+          cd frontend
+          npm test
+          
+  build-and-push:
+    needs: [test-backend, test-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/blogzy-backend:latest,${{ env.DOCKER_REGISTRY }}/blogzy-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/blogzy-frontend:latest,${{ env.DOCKER_REGISTRY }}/blogzy-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+      
+      - name: Update kubeconfig for Amazon EKS
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+          
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+          
+      - name: Update deployment files
+        run: |
+          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g" k8s/backend-deployment.yaml
+          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g" k8s/frontend-deployment.yaml
+          
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install blogzy ./helm/blogzy \
+            --namespace blogzy \
+            --create-namespace \
+            --set global.dockerRegistry=${{ env.DOCKER_REGISTRY }} \
+            --set backend.image.tag=${{ github.sha }} \
+            --set frontend.image.tag=${{ github.sha }} \
+            --set database.password=${{ secrets.DB_PASSWORD }} \
+            --set backend.secret.jwtSecret=${{ secrets.JWT_SECRET }}
+          
+      - name: Deploy monitoring
+        run: |
+          helm upgrade --install monitoring ./helm/monitoring \
+            --namespace monitoring \
+            --create-namespace
+            
+      - name: Deploy logging
+        run: |
+          helm upgrade --install logging ./helm/logging \
+            --namespace logging \
+            --create-namespace
+          
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/backend -n blogzy
+          kubectl rollout status deployment/frontend -n blogzy
