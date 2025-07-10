@@ -22,5 +22,6 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@db:5432/blogzy')
+    # Get database URL from environment variable or use SQLite as fallback
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///blogzy.db')
     JWT_COOKIE_SECURE = True
