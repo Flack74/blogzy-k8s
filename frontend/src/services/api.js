@@ -43,7 +43,7 @@ api.interceptors.response.use(
           },
         };
         
-        const response = await axios.post('/api/v1/auth/refresh', {}, refreshConfig);
+        const response = await axios.post('/api/auth/refresh', {}, refreshConfig);
         const { access_token } = response.data;
         
         // Save the new token

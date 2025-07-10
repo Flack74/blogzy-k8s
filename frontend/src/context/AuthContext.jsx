@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await api.get('/api/v1/auth/me');
+          const response = await api.get('/api/auth/me');
           setUser(response.data);
         } catch (error) {
           console.error('Authentication error:', error);
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (credentials) => {
     try {
-      const response = await api.post('/api/v1/auth/login', credentials);
+      const response = await api.post('/api/auth/login', credentials);
       const { user, access_token, refresh_token } = response.data;
       
       // Save tokens
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
   // Register function
   const register = async (userData) => {
     try {
-      const response = await api.post('/api/v1/auth/register', userData);
+      const response = await api.post('/api/auth/register', userData);
       const { user, access_token, refresh_token } = response.data;
       
       // Save tokens
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateProfile = async (userData) => {
     try {
-      const response = await api.put('/api/v1/users/profile', userData);
+      const response = await api.put('/api/users/profile', userData);
       setUser(response.data.user);
       toast.success('Profile updated successfully');
       return true;
@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
   // Change password
   const changePassword = async (passwordData) => {
     try {
-      await api.post('/api/v1/auth/change-password', passwordData);
+      await api.post('/api/auth/change-password', passwordData);
       toast.success('Password changed successfully');
       return true;
     } catch (error) {

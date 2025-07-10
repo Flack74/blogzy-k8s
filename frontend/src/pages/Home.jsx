@@ -14,7 +14,7 @@ const Home = () => {
   const { data: postsData, isLoading: postsLoading, error: postsError } = useQuery(
     'posts',
     async () => {
-      const response = await api.get('/api/v1/posts');
+      const response = await api.get('/api/posts');
       return response.data;
     }
   );
@@ -23,7 +23,7 @@ const Home = () => {
   const { data: tagsData } = useQuery(
     'tags',
     async () => {
-      const response = await api.get('/api/v1/tags');
+      const response = await api.get('/api/tags');
       return response.data;
     }
   );
